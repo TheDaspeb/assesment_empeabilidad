@@ -49,27 +49,27 @@
     {
       "channel": "general",
       "sender": "ana@riwi.local",
-      "content": "La reunión general será mañana a las nueve de la mañana."
+      "content": "The general meeting is tomorrow at nine in the morning."
     },
     {
       "channel": "general",
       "sender": "daniel@riwi.local",
-      "content": "Perfecto, revisaré las tareas pendientes antes de la reunión."
+      "content": "Great, I will check the pending tasks before the meeting."
     },
     {
       "channel": "frontend-team",
       "sender": "ana@riwi.local",
-      "content": "El equipo frontend debe terminar la interfaz responsiva esta semana."
+      "content": "The frontend team must finish the responsive interface this week."
     },
     {
       "channel": "frontend-team",
       "sender": "daniel@riwi.local",
-      "content": "Estoy trabajando en la vista de conversaciones y el panel del copiloto."
+      "content": "I am working on the conversations view and the copilot panel."
     },
     {
       "channel": "backend-private",
       "sender": "carlos@riwi.local",
-      "content": "La contraseña temporal del entorno de pruebas debe rotarse antes del despliegue."
+      "content": "The test environment temporary password must change before deployment."
     }
   ],
   "business_rules": [
