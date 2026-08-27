@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import {
     AiAnswer,
     AiProvider,
+    AnswerQuestionInput,
 } from "@/application/ports/ai-provider";
 
 import {
@@ -55,7 +56,7 @@ export class GeminiProvider implements AiProvider {
         userName,
         jobTitle,
         context,
-    }: Parameters<AiProvider["answerQuestion"]>[0]): Promise<AiAnswer> {
+    }: AnswerQuestionInput): Promise<AiAnswer> {
         const formattedContext = context
             .map(
                 (message) =>
@@ -65,13 +66,13 @@ Content: ${message.content}`,
             )
             .join("\n\n");
 
-        const response =
-            await this.client.models.generateContent({
+        const interaction =
+            await this.client.interactions.create({
                 model:
                     process.env.GEMINI_CHAT_MODEL ??
-                    "gemini-2.5-flash",
+                    "gemini-3.6-flash",
 
-                contents: `
+                input: `
 ${SYSTEM_PROMPT}
 
 Prompt version: ${SYSTEM_PROMPT_VERSION}
@@ -92,11 +93,10 @@ ${question}
 
         return {
             answer:
-                response.text ??
+                interaction.output_text ??
                 "No tengo suficiente información autorizada para responder esta pregunta.",
 
-            tokensUsed:
-                response.usageMetadata?.totalTokenCount ?? 0,
+            tokensUsed: 0,
         };
     }
 }

@@ -15,6 +15,17 @@ interface Profile {
   jobTitle: string;
 }
 
+interface CopilotMessage {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  citations?: {
+    messageId: string;
+    channelId: string;
+    similarity: number;
+  }[];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -42,6 +53,9 @@ export default function DashboardPage() {
     }[]
   >([]);
   const [searching, setSearching] = useState(false);
+  const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([]);
+  const [copilotQuestion, setCopilotQuestion] = useState("");
+  const [askingCopilot, setAskingCopilot] = useState(false);
 
   async function loadMessages(channelId: string) {
     const token = localStorage.getItem("access_token");
@@ -166,6 +180,76 @@ export default function DashboardPage() {
       setSearchResults(data.messages);
     } finally {
       setSearching(false);
+    }
+  }
+
+  async function askCopilot() {
+    if (!copilotQuestion.trim() || askingCopilot) {
+      return;
+    }
+
+    const token = localStorage.getItem("access_token");
+
+    if (!token) return;
+
+    const question = copilotQuestion.trim();
+
+    const userMessage: CopilotMessage = {
+      id: crypto.randomUUID(),
+      role: "USER",
+      content: question,
+    };
+
+    setCopilotMessages((current) => [
+      ...current,
+      userMessage,
+    ]);
+
+    setCopilotQuestion("");
+
+    try {
+      setAskingCopilot(true);
+
+      const response = await fetch("/api/copilot", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question,
+        }),
+      });
+
+      const data = await response.json();
+
+      const assistantMessage: CopilotMessage = {
+        id: crypto.randomUUID(),
+        role: "ASSISTANT",
+        content: response.ok
+          ? data.answer
+          : data.message ?? "No fue posible consultar el copiloto.",
+        citations: response.ok
+          ? data.citations ?? []
+          : [],
+      };
+
+      setCopilotMessages((current) => [
+        ...current,
+        assistantMessage,
+      ]);
+    } catch {
+      setCopilotMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "ASSISTANT",
+          content: "No fue posible consultar el copiloto.",
+          citations: [],
+        },
+      ]);
+    } finally {
+      setAskingCopilot(false);
     }
   }
 
@@ -416,7 +500,7 @@ export default function DashboardPage() {
         </section>
 
         {/* Copilot + profile */}
-        <aside className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900 p-4">
+        <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:h-[calc(100vh-2rem)]">
           <div>
             <h2 className="text-lg font-bold">
               Copiloto IA
@@ -427,8 +511,111 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="mt-5 flex-1 rounded-xl border border-dashed border-slate-700 p-4 text-sm text-slate-500">
-            El copiloto aparecerá aquí
+          <div className="mt-5 flex min-h-0 flex-1 flex-col gap-4">
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-4">
+              {copilotMessages.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center text-center text-sm text-slate-500">
+                  Pregunta algo sobre tus conversaciones.
+                </div>
+              ) : (
+                copilotMessages.map((message) => {
+                  const isUser = message.role === "USER";
+
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex shrink-0 ${
+                        isUser ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm ${
+                          isUser
+                            ? "bg-indigo-600 text-white"
+                            : "bg-slate-800 text-slate-100"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap break-words leading-6">
+                          {message.content}
+                        </p>
+
+                        {!isUser &&
+                          message.citations &&
+                          message.citations.length > 0 && (
+                            <div className="mt-3 border-t border-slate-700 pt-3">
+                              <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                Fuentes
+                              </p>
+
+                              <div className="space-y-2">
+                                {message.citations.map((citation) => (
+                                  <div
+                                    key={citation.messageId}
+                                    className="rounded-lg bg-slate-900 p-2 text-[11px] text-slate-400"
+                                  >
+                                    <p>
+                                      Mensaje{" "}
+                                      {citation.messageId.slice(0, 8)}...
+                                    </p>
+
+                                    <p>
+                                      Relevancia:{" "}
+                                      {Math.round(
+                                        citation.similarity * 100,
+                                      )}
+                                      %
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+
+              {askingCopilot && (
+                <div className="flex shrink-0 justify-start">
+                  <div className="rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-400">
+                    Pensando...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="shrink-0">
+              <textarea
+                value={copilotQuestion}
+                onChange={(event) =>
+                  setCopilotQuestion(event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                  ) {
+                    event.preventDefault();
+                    askCopilot();
+                  }
+                }}
+                placeholder="Pregunta al copiloto..."
+                rows={2}
+                className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm outline-none focus:border-indigo-500"
+              />
+
+              <button
+                onClick={askCopilot}
+                disabled={
+                  askingCopilot ||
+                  !copilotQuestion.trim()
+                }
+                className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {askingCopilot ? "Consultando..." : "Enviar"}
+              </button>
+            </div>
           </div>
 
           {profile && (
