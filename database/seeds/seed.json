@@ -1,0 +1,85 @@
+{
+  "users": [
+    {
+      "name": "Daniel Perez",
+      "email": "daniel@riwi.local",
+      "password": "Daniel123*",
+      "job_title": "Software Developer"
+    },
+    {
+      "name": "Ana Gomez",
+      "email": "ana@riwi.local",
+      "password": "Ana123*",
+      "job_title": "Product Manager"
+    },
+    {
+      "name": "Carlos Ruiz",
+      "email": "carlos@riwi.local",
+      "password": "Carlos123*",
+      "job_title": "Backend Developer"
+    }
+  ],
+  "channels": [
+    {
+      "name": "general",
+      "type": "PUBLIC",
+      "members": [
+        "daniel@riwi.local",
+        "ana@riwi.local",
+        "carlos@riwi.local"
+      ]
+    },
+    {
+      "name": "frontend-team",
+      "type": "PRIVATE",
+      "members": [
+        "daniel@riwi.local",
+        "ana@riwi.local"
+      ]
+    },
+    {
+      "name": "backend-private",
+      "type": "PRIVATE",
+      "members": [
+        "carlos@riwi.local"
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "channel": "general",
+      "sender": "ana@riwi.local",
+      "content": "La reunión general será mañana a las nueve de la mañana."
+    },
+    {
+      "channel": "general",
+      "sender": "daniel@riwi.local",
+      "content": "Perfecto, revisaré las tareas pendientes antes de la reunión."
+    },
+    {
+      "channel": "frontend-team",
+      "sender": "ana@riwi.local",
+      "content": "El equipo frontend debe terminar la interfaz responsiva esta semana."
+    },
+    {
+      "channel": "frontend-team",
+      "sender": "daniel@riwi.local",
+      "content": "Estoy trabajando en la vista de conversaciones y el panel del copiloto."
+    },
+    {
+      "channel": "backend-private",
+      "sender": "carlos@riwi.local",
+      "content": "La contraseña temporal del entorno de pruebas debe rotarse antes del despliegue."
+    }
+  ],
+  "business_rules": [
+    "A user can only access messages from channels where the user is a member.",
+    "Messages cannot be physically deleted.",
+    "Deleted messages must use soft delete.",
+    "The authenticated user identifier must come from the access token.",
+    "The AI copilot can only retrieve messages visible to the authenticated user.",
+    "Private channel messages must never be exposed to non-members.",
+    "Message history must use keyset pagination.",
+    "Passwords must never be stored in plain text."
+  ]
+}
