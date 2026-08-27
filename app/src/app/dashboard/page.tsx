@@ -3,6 +3,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  translations,
+  Language,
+} from "@/i18n/translations";
+
 interface Channel {
   id: string;
   name: string;
@@ -56,6 +61,9 @@ export default function DashboardPage() {
   const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([]);
   const [copilotQuestion, setCopilotQuestion] = useState("");
   const [askingCopilot, setAskingCopilot] = useState(false);
+  const [language, setLanguage] = useState<Language>("es");
+
+  const t = translations[language];
 
   async function loadMessages(channelId: string) {
     const token = localStorage.getItem("access_token");
@@ -228,7 +236,7 @@ export default function DashboardPage() {
         role: "ASSISTANT",
         content: response.ok
           ? data.answer
-          : data.message ?? "No fue posible consultar el copiloto.",
+          : data.message ?? t.copilotError,
         citations: response.ok
           ? data.citations ?? []
           : [],
@@ -244,12 +252,24 @@ export default function DashboardPage() {
         {
           id: crypto.randomUUID(),
           role: "ASSISTANT",
-          content: "No fue posible consultar el copiloto.",
+          content: t.copilotError,
           citations: [],
         },
       ]);
     } finally {
       setAskingCopilot(false);
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      localStorage.removeItem("access_token");
+      router.push("/login");
     }
   }
 
@@ -307,7 +327,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-        Cargando...
+        {t.loading}
       </main>
     );
   }
@@ -319,13 +339,41 @@ export default function DashboardPage() {
         {/* Conversations */}
         <aside className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <div className="mb-5">
-            <h1 className="text-xl font-bold">
-              Riwi Chat
-            </h1>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="text-xl font-bold">
+                  Riwi Chat
+                </h1>
 
-            <p className="text-sm text-slate-400">
-              Conversaciones
-            </p>
+                <p className="text-sm text-slate-400">
+                  {t.conversations}
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLanguage("es")}
+                  className={`rounded-lg px-2 py-1 text-xs font-semibold ${
+                    language === "es"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  ES
+                </button>
+
+                <button
+                  onClick={() => setLanguage("en")}
+                  className={`rounded-lg px-2 py-1 text-xs font-semibold ${
+                    language === "en"
+                      ? "bg-indigo-600 text-white"
+                      : "bg-slate-800 text-slate-300"
+                  }`}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
 
             <div className="mt-4 flex gap-2">
               <input
@@ -338,7 +386,7 @@ export default function DashboardPage() {
                     searchMessages();
                   }
                 }}
-                placeholder="Buscar mensajes..."
+                placeholder={t.searchPlaceholder}
                 className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-indigo-500"
               />
 
@@ -347,7 +395,7 @@ export default function DashboardPage() {
                 disabled={searching}
                 className="rounded-xl bg-slate-800 px-3 text-sm hover:bg-slate-700 disabled:opacity-50"
               >
-                {searching ? "..." : "Buscar"}
+                {searching ? "..." : t.search}
               </button>
             </div>
 
@@ -388,7 +436,9 @@ export default function DashboardPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-slate-300">
-                  {channel.type}
+                  {channel.type === "PUBLIC"
+                    ? t.public
+                    : t.private}
                 </p>
               </button>
             ))}
@@ -401,14 +451,14 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold">
               {selectedChannel
                 ? `# ${selectedChannel.name}`
-                : "Selecciona una conversación"}
+                : t.selectConversation}
             </h2>
           </header>
 
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 sm:p-6">
             {messages.length === 0 ? (
               <div className="flex flex-1 items-center justify-center text-slate-500">
-                No hay mensajes todavía
+                {t.noMessages}
               </div>
             ) : (
               messages.map((message) => {
@@ -444,17 +494,17 @@ export default function DashboardPage() {
                         </span>
 
                         {message.uiStatus === "PENDING" && (
-                          <span>Pendiente...</span>
+                          <span>{t.pending}</span>
                         )}
 
                         {message.uiStatus === "FAILED" && (
                           <span className="text-red-300">
-                            Fallido
+                            {t.failed}
                           </span>
                         )}
 
                         {!message.uiStatus && (
-                          <span>Enviado</span>
+                          <span>{t.sent}</span>
                         )}
                       </div>
                     </div>
@@ -480,7 +530,7 @@ export default function DashboardPage() {
                     sendMessage();
                   }
                 }}
-                placeholder="Escribe un mensaje..."
+                placeholder={t.messagePlaceholder}
                 className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none focus:border-indigo-500"
               />
 
@@ -493,7 +543,7 @@ export default function DashboardPage() {
                 }
                 className="rounded-xl bg-indigo-600 px-5 py-3 font-semibold hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {sending ? "Enviando..." : "Enviar"}
+                {sending ? t.sending : t.send}
               </button>
             </div>
           </div>
@@ -503,11 +553,11 @@ export default function DashboardPage() {
         <aside className="flex min-h-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:h-[calc(100vh-2rem)]">
           <div>
             <h2 className="text-lg font-bold">
-              Copiloto IA
+              {t.copilotTitle}
             </h2>
 
             <p className="mt-1 text-sm text-slate-400">
-              Consulta información de tus conversaciones
+              {t.copilotSubtitle}
             </p>
           </div>
 
@@ -515,7 +565,7 @@ export default function DashboardPage() {
             <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950 p-4">
               {copilotMessages.length === 0 ? (
                 <div className="flex flex-1 items-center justify-center text-center text-sm text-slate-500">
-                  Pregunta algo sobre tus conversaciones.
+                  {t.copilotEmpty}
                 </div>
               ) : (
                 copilotMessages.map((message) => {
@@ -544,7 +594,7 @@ export default function DashboardPage() {
                           message.citations.length > 0 && (
                             <div className="mt-3 border-t border-slate-700 pt-3">
                               <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                                Fuentes
+                                {t.sources}
                               </p>
 
                               <div className="space-y-2">
@@ -554,12 +604,12 @@ export default function DashboardPage() {
                                     className="rounded-lg bg-slate-900 p-2 text-[11px] text-slate-400"
                                   >
                                     <p>
-                                      Mensaje{" "}
+                                      {t.message}{" "}
                                       {citation.messageId.slice(0, 8)}...
                                     </p>
 
                                     <p>
-                                      Relevancia:{" "}
+                                      {t.relevance}:{" "}
                                       {Math.round(
                                         citation.similarity * 100,
                                       )}
@@ -579,7 +629,7 @@ export default function DashboardPage() {
               {askingCopilot && (
                 <div className="flex shrink-0 justify-start">
                   <div className="rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-400">
-                    Pensando...
+                    {t.thinking}
                   </div>
                 </div>
               )}
@@ -600,7 +650,7 @@ export default function DashboardPage() {
                     askCopilot();
                   }
                 }}
-                placeholder="Pregunta al copiloto..."
+                placeholder={t.copilotPlaceholder}
                 rows={2}
                 className="w-full resize-none rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm outline-none focus:border-indigo-500"
               />
@@ -613,7 +663,7 @@ export default function DashboardPage() {
                 }
                 className="mt-2 w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {askingCopilot ? "Consultando..." : "Enviar"}
+                {askingCopilot ? t.consulting : t.send}
               </button>
             </div>
           </div>
@@ -621,7 +671,7 @@ export default function DashboardPage() {
           {profile && (
             <div className="mt-5 border-t border-slate-800 pt-5">
               <p className="text-xs uppercase tracking-wider text-slate-500">
-                Perfil
+                {t.profile}
               </p>
 
               <p className="mt-2 font-semibold">
@@ -631,6 +681,13 @@ export default function DashboardPage() {
               <p className="text-sm text-slate-400">
                 {profile.jobTitle}
               </p>
+
+              <button
+                onClick={handleLogout}
+                className="mt-4 w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+              >
+                {language === "es" ? "Cerrar sesión" : "Log out"}
+              </button>
             </div>
           )}
         </aside>
