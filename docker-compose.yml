@@ -21,5 +21,30 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+
+    container_name: rw_app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bd_daniel_perez_thomson
+
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3.6-flash}
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-2}
+
+    ports:
+      - "3000:3000"
+
 volumes:
   rw_postgres_data:
