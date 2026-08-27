@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Channel {
   id: string;
@@ -15,6 +16,7 @@ interface Profile {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
@@ -172,7 +174,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem("access_token");
 
       if (!token) {
-        window.location.href = "/login";
+        router.push("/login");
         return;
       }
 
@@ -192,7 +194,7 @@ export default function DashboardPage() {
 
         if (!channelsResponse.ok || !profileResponse.ok) {
           localStorage.removeItem("access_token");
-          window.location.href = "/login";
+          router.push("/login");
           return;
         }
 
@@ -216,7 +218,7 @@ export default function DashboardPage() {
     }
 
     loadDashboard();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
